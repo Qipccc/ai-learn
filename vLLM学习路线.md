@@ -24,6 +24,11 @@
 - **Continuous Batching**：动态批处理，提高 GPU 利用率
 - **OpenAI API 兼容**：快速集成现有应用
 
+
+论文解读： https://lywencoding.com/posts/f79d4b0.html
+
+Tokenization 與 Embedding： https://ithelp.ithome.com.tw/m/articles/10385077
+
 ---
 
 ### 1.2 本地部署第一个模型
