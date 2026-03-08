@@ -18,6 +18,7 @@
 | GitHub | https://github.com/vllm-project/vllm |
 | PagedAttention 论文 | https://arxiv.org/abs/2309.06180 |
 
+
 **核心概念：**
 - **PagedAttention**：类比操作系统分页内存管理，解决 LLM 显存问题
 - **Continuous Batching**：动态批处理，提高 GPU 利用率
@@ -59,6 +60,82 @@ curl http://localhost:8000/v1/completions \
     "prompt": "你好，请介绍一下自己",
     "max_tokens": 100
   }'
+```
+
+---
+
+### 1.3 核心代码结构
+
+源码已下载到：`aiLearn/vllm_learn/code/vllm/`
+
+#### 代码目录结构
+
+```
+vllm/
+├── vllm/
+│   ├── engine/          # 推理引擎核心 ⭐⭐⭐
+│   │   ├── core.py      # 核心推理流程
+│   │   ├── llm_engine.py # LLM 引擎主类
+│   │   └── async_engine.py # 异步引擎
+│   ├── model_executor/  # 模型执行器 ⭐⭐⭐
+│   │   ├── models/      # 各模型实现
+│   │   └── model_loader.py
+│   ├── kernels/         # CUDA 内核 ⭐⭐
+│   │   ├── attention.py # Attention 实现
+│   │   └── layernorm.py # LayerNorm 等
+│   ├── entrypoints/    # API 入口 ⭐⭐
+│   │   ├── api_server.py
+│   │   └── openai/
+│   ├── distributed/    # 分布式推理 ⭐⭐
+│   ├── sequence.py     # 序列管理
+│   ├── sampling_params.py # 采样参数
+│   └── config/        # 配置管理
+├── csrc/              # C++/CUDA 底层实现
+├── tests/             # 测试代码
+└── examples/          # 示例代码
+```
+
+#### 核心文件说明
+
+| 文件路径 | 作用 | 优先级 |
+|---------|------|--------|
+| `engine/llm_engine.py` | 推理引擎主类，调度各模块 | ⭐⭐⭐ |
+| `engine/core.py` | 核心推理循环，处理请求 | ⭐⭐⭐ |
+| `model_executor/model_loader.py` | 模型加载逻辑 | ⭐⭐⭐ |
+| `kernels/attention.py` | PagedAttention 实现 | ⭐⭐⭐ |
+| `sequence.py` | 请求序列管理 | ⭐⭐ |
+| `entrypoints/api_server.py` | API 服务入口 | ⭐⭐ |
+
+#### 推荐学习路径
+
+```
+1. 先读论文 → aiLearn/vllm_learn/paper/paged_attention.pdf
+   └── 理解 PagedAttention 原理
+
+2. 入门阶段 → engine/llm_engine.py
+   └── 了解整体架构
+
+3. 核心阶段 → engine/core.py
+   └── 理解推理流程
+
+4. 进阶阶段 → kernels/attention.py
+   └── 理解 PagedAttention 实现
+
+5. 扩展阶段 → model_executor/models/
+   └── 了解不同模型的支持
+```
+
+#### 本地源码学习命令
+
+```bash
+# 查看核心引擎代码
+cat vllm_learn/code/vllm/vllm/engine/llm_engine.py
+
+# 查看 Attention 实现
+cat vllm_learn/code/vllm/vllm/kernels/attention.py
+
+# 查看 PagedAttention 关键代码
+grep -n "paged_attention" vllm_learn/code/vllm/vllm/kernels/attention.py
 ```
 
 ---
