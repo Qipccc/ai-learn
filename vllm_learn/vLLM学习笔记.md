@@ -286,6 +286,110 @@ Page 3: [Token 33-48]
 
 ---
 
+## 8. Beam Search（束搜索）
+
+### 什么是 Beam Search
+
+**Beam Search** 是一种**贪心搜索策略**，在每一步保留概率最高的 Top-K 个候选序列，最终选择总分最高的序列。
+
+### 对比：Greedy vs Beam Search
+
+| 方法 | 原理 | 优点 | 缺点 |
+|-----|------|-----|------|
+| **Greedy** | 每次选概率最高的 1 个 | 速度快 | 可能错过最优解 |
+| **Beam Search** | 保留 Top-K 个最优路径 | 更可能找到全局最优 | 速度较慢 |
+
+### Beam Search 原理图解
+
+```
+假设 beam_size=2
+
+Step 1:
+"今天" → 概率: 0.4
+"今天天气" → 概率: 0.3  ← 保留
+"今天心情" → 0.2  ← 保留
+"今天吃" → 0.1
+
+Step 2:
+"今天天气" → "今天天气好" 0.25  ← 保留
+               "今天天气不" 0.05
+"今天心情" → "今天心情好" 0.15  ← 保留
+               "今天心情不" 0.05
+
+Step 3: 计算总分，选择最高的
+"今天天气好" = 0.3 × 0.25 = 0.075  ← 最终输出
+"今天心情好" = 0.2 × 0.15 = 0.030
+```
+
+### Beam Search 代码实现
+
+```python
+def beam_search(model, prompt, beam_size=5, max_len=100):
+    # 1. 初始化
+    sequences = [(prompt, 0.0)]  # (序列, log概率)
+
+    for step in range(max_len):
+        all_candidates = []
+
+        # 2. 对每个候选序列扩展
+        for seq, score in sequences:
+            # 预测下一个 token
+            logits = model(seq)
+            probs = softmax(logits[-1])
+
+            # 3. 取 Top-K
+            top_k_probs, top_k_ids = torch.topk(probs, beam_size)
+
+            # 4. 生成新候选
+            for i in range(beam_size):
+                new_seq = seq + [top_k_ids[i]]
+                new_score = score + log(top_k_probs[i])
+                all_candidates.append((new_seq, new_score))
+
+        # 5. 选择 Top-K 作为下一轮
+        all_candidates.sort(key=lambda x: x[1], reverse=True)
+        sequences = all_candidates[:beam_size]
+
+    # 6. 返回概率最高的
+    return sequences[0][0]
+```
+
+### vLLM 中的 Beam Search
+
+```python
+from vllm import LLM, SamplingParams
+
+llm = LLM(model="Qwen/Qwen2-0.5B-Instruct")
+
+# Beam Search 配置
+sampling_params = SamplingParams(
+    best_of=5,           # beam_size
+    max_tokens=100,
+    use_beam_search=True,  # 启用束搜索
+)
+
+# vLLM 会自动进行 Beam Search
+outputs = llm.generate(prompt, sampling_params)
+```
+
+### Beam Search vs 其他采样方法
+
+| 方法 | 特点 | 适用场景 |
+|-----|------|---------|
+| **Greedy** | 确定性 | 需要确定输出的任务 |
+| **Beam Search** | 兼顾多样性与质量 | 机器翻译、摘要 |
+| **Top-K** | 随机采样 | 创意写作 |
+| **Top-P (Nucleus)** | 动态阈值 | 对话生成 |
+| **Temperature** | 控制随机性 | 调节多样性 |
+
+### Beam Search 的问题
+
+1. **计算量大**：需要维护多个候选序列
+2. **显存占用**：beam_size 越大，显存开销越大
+3. **可能重复**：容易陷入重复生成循环
+
+---
+
 ## 相关资源
 
 - [PagedAttention 论文](https://arxiv.org/abs/2309.06180)
